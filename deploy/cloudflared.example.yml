@@ -1,0 +1,8 @@
+# Copy to .secrets/cloudflared/niimbot-print.yml and fill in your tunnel ID and hostname.
+# Put the tunnel's credentials file (<TUNNEL_ID>.json) in the same folder.
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+ingress:
+  - hostname: print.example.com
+    service: http://web:8080
+  - service: http_status:404

@@ -1,0 +1,1332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Niimbot Print · label studio</title>
+  <meta name="description" content="Design labels in your browser and print them over Bluetooth on a NIIMBOT D110_M.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bebas+Neue&family=Caveat:wght@400;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Oswald:wght@400;700&family=Pacifico&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Slab:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap">
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg:#f3f3ef; --surface:#ffffff; --surface-2:#f6f6f2; --stage:#ebebe5; --dot:#d4d4cc;
+      --ink:#17191c; --muted:#676b72; --faint:#9a9ea5; --line:#e3e3dd; --line-strong:#cfcfc8;
+      --accent:#167653; --accent-hover:#11633f; --accent-ink:#ffffff; --accent-soft:#e5f2eb; --accent-text:#0f5c40;
+      --select:#2f6fed; --snap:#e0368a;
+      --warn-bg:#fff4dc; --warn-ink:#734d06; --danger:#c43d16; --amber:#d99a06;
+      --shadow-sm:0 1px 2px rgb(20 24 22 / .06); --shadow-pop:0 12px 32px -6px rgb(20 30 25 / .22), 0 0 0 1px var(--line);
+      --shadow-paper:0 1px 2px rgb(0 0 0 / .08), 0 10px 30px -8px rgb(20 40 30 / .22);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:#131416; --surface:#1b1c1f; --surface-2:#232428; --stage:#17181a; --dot:#2b2d31;
+        --ink:#ecedef; --muted:#a2a6ad; --faint:#70747b; --line:#2b2d31; --line-strong:#3a3c42;
+        --accent:#3aae7b; --accent-hover:#4cc08d; --accent-ink:#04140c; --accent-soft:#15392a; --accent-text:#82d9b0;
+        --select:#5b8ef5; --warn-bg:#3a2d10; --warn-ink:#f2cf86; --danger:#f0805f;
+        --shadow-paper:0 1px 2px rgb(0 0 0 / .5), 0 14px 36px -10px rgb(0 0 0 / .7);
+        --shadow-pop:0 12px 32px -6px rgb(0 0 0 / .6), 0 0 0 1px var(--line);
+      }
+    }
+    * { box-sizing:border-box }
+    html, body { height:100% }
+    body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased }
+    button, input, select, textarea { font:inherit; color:inherit }
+    svg { flex:none }
+    [hidden] { display:none !important }
+    a { color:inherit }
+
+    /* ── Top bar ── */
+    .topbar { height:56px; display:flex; align-items:center; gap:8px; padding:0 14px 0 18px; background:var(--surface); border-bottom:1px solid var(--line) }
+    .brand { display:flex; align-items:center; gap:10px; margin-right:auto; min-width:0 }
+    .brand-mark { width:30px; height:30px; border-radius:8px; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center }
+    .brand strong { display:block; font-size:15px; letter-spacing:-.01em }
+    .brand span { display:block; font-size:12px; color:var(--muted); white-space:nowrap }
+    .chip { display:flex; align-items:center; gap:8px; height:32px; padding:0 12px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); font-size:13px; color:var(--muted); white-space:nowrap; max-width:36vw; overflow:hidden; text-overflow:ellipsis; margin-right:4px }
+    .chip .dot { width:8px; height:8px; border-radius:50%; background:var(--faint) }
+    .chip[data-state=connecting] .dot { background:var(--amber); animation:pulse 1s infinite }
+    .chip[data-state=connected] { color:var(--ink) }
+    .chip[data-state=connected] .dot { background:var(--accent); box-shadow:0 0 0 3px var(--accent-soft) }
+    .chip[data-state=printing] .dot { background:var(--accent); animation:pulse .8s infinite }
+    .chip[data-state=error] .dot { background:var(--danger) }
+    @keyframes pulse { 50% { opacity:.3 } }
+
+    /* ── Buttons ── */
+    .btn { appearance:none; border:1px solid transparent; border-radius:9px; height:36px; padding:0 14px; display:inline-flex; align-items:center; justify-content:center; gap:7px; font-weight:600; font-size:13.5px; cursor:pointer; white-space:nowrap; text-decoration:none; transition:background .12s, border-color .12s, color .12s }
+    .btn:disabled { opacity:.45; cursor:not-allowed }
+    .btn:focus-visible, .icon-btn:focus-visible, .tool:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+    .btn-primary { background:var(--accent); color:var(--accent-ink) }
+    .btn-primary:not(:disabled):hover { background:var(--accent-hover) }
+    .btn-secondary { background:var(--surface); border-color:var(--line-strong) }
+    .btn-secondary:not(:disabled):hover { background:var(--surface-2) }
+    .btn-ghost { background:transparent; color:var(--muted) }
+    .btn-ghost:not(:disabled):hover { background:var(--surface-2); color:var(--ink) }
+    .btn-sm { height:32px; padding:0 12px; font-size:13px }
+    .btn-lg { height:44px; font-size:15px; border-radius:11px }
+    .icon-btn { appearance:none; border:0; background:transparent; width:32px; height:32px; border-radius:8px; display:inline-grid; place-items:center; color:var(--muted); cursor:pointer; text-decoration:none }
+    .icon-btn:not(:disabled):hover { background:var(--surface-2); color:var(--ink) }
+    .icon-btn:disabled { opacity:.35; cursor:not-allowed }
+    .icon-btn.danger:not(:disabled):hover { color:var(--danger) }
+    kbd { font:600 11px/1 Inter,-apple-system,sans-serif; padding:3px 5px; border-radius:5px; background:rgb(127 127 127 / .18) }
+
+    .banner { padding:10px 18px; background:var(--warn-bg); color:var(--warn-ink); font-size:13px; border-bottom:1px solid var(--line) }
+
+    /* ── Workspace ── */
+    .workspace { display:grid; grid-template-columns:minmax(0,1fr) 360px; height:calc(100vh - 56px) }
+    body.has-banner .workspace { height:calc(100vh - 56px - 40px) }
+    .stage { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:auto }
+    .stage-canvas { flex:1; min-height:320px; margin:16px 18px 0; border-radius:16px; background-color:var(--stage); background-image:radial-gradient(var(--dot) 1px, transparent 1.2px); background-size:16px 16px; display:grid; place-items:center; position:relative; overflow:hidden; user-select:none; -webkit-user-select:none }
+
+    .toolbar { position:absolute; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:2px; padding:4px; background:var(--surface); border-radius:12px; box-shadow:var(--shadow-pop); z-index:3 }
+    .tool { appearance:none; border:0; background:none; height:36px; padding:0 10px; border-radius:8px; display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; white-space:nowrap }
+    .tool:not(:disabled):hover, .tool[aria-expanded=true] { background:var(--surface-2) }
+    .tool:disabled { opacity:.35; cursor:not-allowed }
+    .tool.icon { width:36px; padding:0; justify-content:center; color:var(--muted) }
+    .toolbar .sep { width:1px; height:20px; background:var(--line); margin:0 4px }
+    .popover { position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--surface); border-radius:12px; box-shadow:var(--shadow-pop); padding:10px; width:300px }
+
+    .stage-foot { display:flex; align-items:center; gap:14px; padding:10px 20px 0; font-size:12.5px; color:var(--muted) }
+    .stage-foot strong { color:var(--ink); font-weight:600 }
+    .stage-foot .spacer { flex:1 }
+    .stage-foot .warn { color:var(--danger) }
+    .switch { display:inline-flex; align-items:center; gap:6px; font-weight:500; font-size:12.5px; color:var(--muted); cursor:pointer; user-select:none }
+    .switch input { accent-color:var(--accent); margin:0 }
+
+    .label-frame { position:relative; margin-top:30px }
+    .paper { position:relative; background:#fff; box-shadow:var(--shadow-paper); overflow:hidden }
+    .nonprint { position:absolute; left:0; right:0; background:repeating-linear-gradient(-45deg, #eef0ee 0 4px, #fff 4px 8px) }
+    .nonprint.top { top:0 } .nonprint.bottom { bottom:0 }
+    .printable { position:absolute; left:0; right:0 }
+    .printable canvas { display:block; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges }
+    .guides-on .printable::after { content:""; position:absolute; inset:0; outline:1px dashed rgb(22 118 83 / .5); outline-offset:-1px; pointer-events:none }
+    .guides-on .printable::before { content:""; position:absolute; top:0; bottom:0; left:var(--m,0); right:var(--m,0); border-left:1px dotted rgb(22 118 83 / .45); border-right:1px dotted rgb(22 118 83 / .45); pointer-events:none }
+    .guides-off .nonprint { background:#fff }
+    .overlay { position:absolute; left:0; touch-action:none }
+    .overlay .box { position:absolute; pointer-events:none; border-radius:2px }
+    .overlay .box.hover { outline:1px solid var(--select); outline-offset:1px; opacity:.6 }
+    .overlay .box.sel { outline:1.5px solid var(--select); outline-offset:1px }
+    .overlay .handle { position:absolute; width:12px; height:12px; right:-8px; bottom:-8px; background:#fff; border:1.5px solid var(--select); border-radius:3px; pointer-events:auto; cursor:nwse-resize }
+    .overlay .snap { position:absolute; background:var(--snap); pointer-events:none }
+    .empty-hint { position:absolute; inset:0; display:grid; place-items:center; color:#9aa09c; font-size:14px; pointer-events:none; text-align:center }
+    .dim { position:absolute; color:var(--muted); font-size:11.5px; display:flex; align-items:center; justify-content:center; pointer-events:none }
+    .dim-x { left:0; right:0; top:calc(100% + 12px); height:12px; border-left:1px solid var(--line-strong); border-right:1px solid var(--line-strong) }
+    .dim-x::before { content:""; position:absolute; left:0; right:0; top:50%; border-top:1px solid var(--line-strong) }
+    .dim-y { top:0; bottom:0; left:calc(100% + 12px); width:12px; border-top:1px solid var(--line-strong); border-bottom:1px solid var(--line-strong) }
+    .dim-y::before { content:""; position:absolute; top:0; bottom:0; left:50%; border-left:1px solid var(--line-strong) }
+    .dim span { position:relative; background:var(--stage); padding:0 6px; white-space:nowrap }
+    .dim-y span { writing-mode:vertical-rl; padding:6px 0 }
+    .guides-off .dim { visibility:hidden }
+
+    .strip { padding:16px 20px 22px }
+    .tabs { display:flex; gap:4px; margin-bottom:10px }
+    .tab { appearance:none; border:0; background:none; padding:5px 10px; border-radius:7px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer }
+    .tab[aria-selected=true] { background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm), 0 0 0 1px var(--line) }
+    .cards { display:flex; gap:10px; overflow-x:auto; padding:2px 2px 6px }
+    .cards-empty { color:var(--faint); font-size:12.5px; padding:14px 0 }
+    .card { position:relative; flex:none }
+    .card-open { appearance:none; border:1px solid var(--line); background:var(--surface); border-radius:10px; padding:8px; width:152px; cursor:pointer; text-align:left; display:block }
+    .card-open:hover { border-color:var(--line-strong) }
+    .card-open:focus-visible { outline:2px solid var(--accent) }
+    .card-open canvas { display:block; width:100%; height:auto; border-radius:3px; box-shadow:0 0 0 1px var(--line); background:#fff }
+    .card-open span { display:block; margin-top:6px; font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .card-remove { position:absolute; top:-6px; right:-6px; width:22px; height:22px; border-radius:50%; border:1px solid var(--line-strong); background:var(--surface); color:var(--muted); display:grid; place-items:center; cursor:pointer; opacity:0; transition:opacity .12s }
+    .card:hover .card-remove, .card-remove:focus-visible { opacity:1 }
+
+    /* ── Inspector ── */
+    .inspector { background:var(--surface); border-left:1px solid var(--line); display:flex; flex-direction:column; min-height:0 }
+    .panel-scroll { flex:1; overflow:auto }
+    .group { padding:16px 18px; border-bottom:1px solid var(--line) }
+    .group h2 { margin:0 0 12px; font-size:11.5px; font-weight:650; letter-spacing:.06em; text-transform:uppercase; color:var(--muted) }
+    .group-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:-6px 0 8px }
+    .group-head h2 { margin:0 }
+    .group-head .actions { display:flex; gap:0 }
+    .field { display:block; margin-top:14px }
+    .field:first-child { margin-top:0 }
+    .field-label { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12.5px; font-weight:600; margin-bottom:6px }
+    .field-label output { font-weight:500; color:var(--muted); font-variant-numeric:tabular-nums }
+    textarea.text-input { width:100%; min-height:62px; resize:vertical; border:1px solid var(--line-strong); border-radius:9px; padding:9px 11px; background:var(--surface); font-size:15px; font-weight:500; line-height:1.35 }
+    textarea.text-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft) }
+    .seg { display:flex; gap:2px; padding:3px; border-radius:10px; background:var(--surface-2); border:1px solid var(--line) }
+    .seg label { flex:1; position:relative; min-width:0 }
+    .seg input { position:absolute; opacity:0; pointer-events:none }
+    .seg .opt { display:flex; align-items:center; justify-content:center; gap:6px; height:30px; padding:0 6px; border-radius:7px; font-size:12.5px; color:var(--muted); cursor:pointer; white-space:nowrap }
+    .seg .opt:hover { color:var(--ink) }
+    .seg input:checked + .opt { background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm), 0 0 0 1px var(--line) }
+    .seg input:focus-visible + .opt { outline:2px solid var(--accent); outline-offset:1px }
+    .row { display:flex; gap:8px; align-items:center }
+    .row > * { flex:1 }
+    .toggle { appearance:none; height:36px; border-radius:9px; border:1px solid var(--line-strong); background:var(--surface); cursor:pointer; font-size:14px; flex:0 0 40px !important }
+    .toggle[aria-pressed=true] { background:var(--ink); color:var(--surface); border-color:var(--ink) }
+    input[type=range] { width:100%; accent-color:var(--accent); margin:2px 0 0 }
+    .font-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; max-height:196px; overflow:auto; padding:1px }
+    .font-btn { appearance:none; border:1px solid var(--line); background:var(--surface); border-radius:8px; height:38px; padding:0 10px; text-align:left; font-size:15px; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .font-btn:hover { border-color:var(--line-strong) }
+    .font-btn[aria-pressed=true] { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:var(--accent-soft) }
+    .sym-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:4px }
+    .sym-btn { appearance:none; border:1px solid transparent; background:none; aspect-ratio:1; border-radius:8px; display:grid; place-items:center; cursor:pointer; color:var(--ink) }
+    .sym-btn:hover { background:var(--surface-2) }
+    .sym-btn[aria-pressed=true] { border-color:var(--accent); background:var(--accent-soft) }
+    .sel-type { display:flex; align-items:center; gap:8px; font-weight:650; font-size:13.5px }
+    .sel-type .badge { width:26px; height:26px; border-radius:7px; background:var(--surface-2); display:grid; place-items:center; color:var(--muted) }
+
+    .layers { list-style:none; margin:0; padding:0; display:grid; gap:2px }
+    .layers button { appearance:none; width:100%; display:flex; align-items:center; gap:8px; border:0; background:none; padding:7px 8px; border-radius:7px; font-size:13px; text-align:left; cursor:pointer; color:var(--ink) }
+    .layers button:hover { background:var(--surface-2) }
+    .layers button[aria-current=true] { background:var(--accent-soft); color:var(--accent-text) }
+    .layers .glyph { width:18px; display:grid; place-items:center; color:var(--muted) }
+    .layers .name { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+
+    .facts { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; margin:0 0 12px; font-size:13px }
+    .facts dt { color:var(--muted) }
+    .facts dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; overflow-wrap:anywhere }
+    .facts dd.bad { color:var(--danger) }
+    .meter { display:inline-block; width:44px; height:6px; border-radius:3px; background:var(--line); vertical-align:middle; margin-left:6px; overflow:hidden }
+    .meter i { display:block; height:100%; background:var(--accent) }
+    .intro, .hint { margin:0; color:var(--muted); font-size:12.5px }
+    .intro { margin-bottom:12px }
+    .hint { margin-top:8px }
+    details.log { margin-top:12px; font-size:12.5px }
+    details.log summary { cursor:pointer; color:var(--muted) }
+    details.log ol { list-style:none; margin:8px 0 0; padding:8px 10px; max-height:160px; overflow:auto; background:var(--surface-2); border-radius:8px; font:11.5px/1.5 ui-monospace,Menlo,monospace; color:var(--muted) }
+    details.log li.err { color:var(--danger) }
+    details.log time { color:var(--faint); margin-right:6px }
+
+    .print-bar { border-top:1px solid var(--line); padding:14px 18px 16px; background:var(--surface) }
+    .print-row { display:flex; gap:10px; align-items:center }
+    .stepper { display:flex; align-items:center; height:44px; border:1px solid var(--line-strong); border-radius:11px; overflow:hidden }
+    .stepper button { appearance:none; border:0; background:none; width:32px; height:100%; cursor:pointer; color:var(--muted); display:grid; place-items:center }
+    .stepper button:hover { background:var(--surface-2); color:var(--ink) }
+    .stepper input { width:30px; border:0; background:none; text-align:center; font-weight:600; font-size:15px; -moz-appearance:textfield }
+    .stepper input::-webkit-inner-spin-button { -webkit-appearance:none }
+    .stepper input:focus { outline:none }
+    #print { flex:1 }
+    #print kbd { background:rgb(255 255 255 / .2) }
+    .print-status { margin:10px 0 0; font-size:12.5px; color:var(--muted); min-height:18px; overflow-wrap:anywhere }
+    .print-status.err { color:var(--danger) }
+
+    .toast { position:fixed; left:50%; bottom:24px; transform:translate(-50%, 20px); opacity:0; pointer-events:none; background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; font-size:13.5px; font-weight:500; box-shadow:0 10px 30px rgb(0 0 0 / .25); transition:opacity .2s, transform .2s; max-width:calc(100vw - 32px); z-index:10 }
+    .toast.show { opacity:1; transform:translate(-50%, 0) }
+    .toast.err { background:var(--danger); color:#fff }
+
+    dialog { border:0; border-radius:16px; padding:0; width:min(520px, calc(100vw - 32px)); background:var(--surface); color:var(--ink); box-shadow:0 30px 80px rgb(0 0 0 / .35) }
+    dialog::backdrop { background:rgb(10 12 14 / .45) }
+    .dialog-body { padding:22px 24px 8px }
+    .dialog-body h2 { margin:0 0 4px; font-size:18px }
+    .dialog-body h3 { margin:18px 0 8px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted) }
+    .dialog-body ol { margin:0; padding-left:20px; display:grid; gap:6px }
+    .dialog-body p { margin:0; color:var(--muted) }
+    .keys { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; align-items:center }
+    .keys kbd { justify-self:start }
+    .dialog-foot { display:flex; justify-content:space-between; align-items:center; padding:14px 24px 20px; gap:12px }
+
+    @media (max-width: 900px) {
+      .workspace { display:block; height:auto }
+      body.has-banner .workspace { height:auto }
+      .stage { overflow:visible }
+      .stage-canvas { margin:12px 16px 0; height:300px; flex:none }
+      .toolbar { top:10px; max-width:calc(100% - 20px); overflow-x:auto }
+      .tool .lbl { display:none }
+      .stage-foot { padding:10px 16px 0; flex-wrap:wrap }
+      .strip { padding:14px 16px }
+      .inspector { border-left:0; border-top:1px solid var(--line) }
+      .panel-scroll { overflow:visible }
+      .group { padding:16px }
+      .print-bar { position:sticky; bottom:0; padding:12px 16px; box-shadow:0 -6px 20px rgb(0 0 0 / .06) }
+      .topbar { padding:0 10px 0 14px }
+      .brand span { display:none }
+      .chip { padding:0 11px }
+      #chip-text { display:none }
+      .brand strong { white-space:nowrap }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition:none !important; animation:none !important } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></div>
+      <div><strong>Niimbot Print</strong><span>Label studio for the D110_M</span></div>
+    </div>
+    <div class="chip" id="chip" data-state="idle" role="status"><span class="dot"></span><span id="chip-text">Not connected</span></div>
+    <button class="btn btn-primary btn-sm" id="connect">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+      <span id="connect-text">Connect</span>
+    </button>
+    <button class="icon-btn" id="help" title="How it works" aria-label="How it works">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
+    </button>
+    <a class="icon-btn" id="repo-link" href="#" title="Source code on GitHub" aria-label="Source code on GitHub">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.52-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+    </a>
+  </header>
+  <div class="banner" id="banner" hidden></div>
+
+  <main class="workspace">
+    <section class="stage" aria-label="Label editor">
+      <div class="stage-canvas" id="stage">
+        <div class="toolbar" role="toolbar" aria-label="Add to label">
+          <button class="tool" id="add-text" title="Add text"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 5h14M12 5v15"/></svg><span class="lbl">Text</span></button>
+          <button class="tool" id="add-line" title="Add line"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12h16"/></svg><span class="lbl">Line</span></button>
+          <button class="tool" id="add-box" title="Add box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="6" width="16" height="12" rx="2.5"/></svg><span class="lbl">Box</span></button>
+          <button class="tool" id="add-symbol" title="Add symbol" aria-expanded="false" aria-controls="symbol-pop"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z"/></svg><span class="lbl">Symbol</span></button>
+          <span class="sep"></span>
+          <button class="tool icon" id="undo" title="Undo (⌘Z)" aria-label="Undo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+          <button class="tool icon" id="redo" title="Redo (⇧⌘Z)" aria-label="Redo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+          <div class="popover" id="symbol-pop" hidden><div class="sym-grid" id="symbol-pop-grid"></div></div>
+        </div>
+        <div class="label-frame guides-on" id="frame">
+          <div class="paper" id="paper">
+            <div class="nonprint top" id="np-top"></div>
+            <div class="nonprint bottom" id="np-bottom"></div>
+            <div class="printable" id="printable"><canvas id="preview" width="400" height="96" role="img" aria-label="Label preview"></canvas></div>
+            <div class="empty-hint" id="empty-hint" hidden>Add text or a symbol from the toolbar</div>
+          </div>
+          <div class="overlay" id="overlay"></div>
+          <div class="dim dim-x"><span id="dim-x">50 mm</span></div>
+          <div class="dim dim-y"><span id="dim-y">15 mm</span></div>
+        </div>
+      </div>
+      <div class="stage-foot">
+        <span><strong id="meta-size">15 × 50 mm</strong> · <span id="meta-dots">400 × 96 dots</span></span>
+        <span class="warn" id="bounds-warn" hidden>Content is close to the label edge and may be clipped</span>
+        <span class="spacer"></span>
+        <label class="switch"><input type="checkbox" id="guides" checked> Guides &amp; snapping</label>
+        <button class="btn btn-ghost btn-sm" id="save">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></svg>
+          Save design
+        </button>
+      </div>
+      <div class="strip">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" id="tab-templates" aria-selected="true">Templates</button>
+          <button class="tab" role="tab" id="tab-saved" aria-selected="false">Saved &amp; recent</button>
+        </div>
+        <div class="cards" id="cards"></div>
+      </div>
+    </section>
+
+    <aside class="inspector" aria-label="Settings">
+      <div class="panel-scroll">
+        <section class="group" id="roll-group">
+          <div class="group-head">
+            <h2>Label roll</h2>
+            <button class="icon-btn" id="detect" title="Read the roll tag again" aria-label="Read the roll tag again" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+            </button>
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Roll size">
+            <label><input type="radio" name="size" value="15x50"><span class="opt">15 × 50 mm</span></label>
+            <label><input type="radio" name="size" value="12x40"><span class="opt">12 × 40 mm</span></label>
+            <label><input type="radio" name="size" value="custom"><span class="opt">Custom</span></label>
+          </div>
+          <div class="field" id="custom-length" hidden>
+            <span class="field-label">Label length <output id="c-len-out"></output></span>
+            <input type="range" id="c-len" min="20" max="100" aria-label="Label length in millimetres">
+            <p class="hint">Measure your label. Not sure? Apply the <strong>Ruler</strong> template, print it, and read where it ends.</p>
+          </div>
+          <p class="hint" id="roll-status" role="status">Connect the printer and the roll is detected automatically.</p>
+        </section>
+
+        <section class="group" id="sel-group" hidden>
+          <div class="group-head">
+            <div class="sel-type"><span class="badge" id="sel-badge"></span><span id="sel-name">Text</span></div>
+            <div class="actions">
+              <button class="icon-btn" id="act-forward" title="Bring forward" aria-label="Bring forward"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19V5M5 12l7-7 7 7"/></svg></button>
+              <button class="icon-btn" id="act-backward" title="Send backward" aria-label="Send backward"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></button>
+              <button class="icon-btn" id="act-duplicate" title="Duplicate (⌘D)" aria-label="Duplicate"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
+              <button class="icon-btn danger" id="act-delete" title="Delete (⌫)" aria-label="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+            </div>
+          </div>
+
+          <div id="p-text">
+            <label class="field"><span class="field-label">Text</span><textarea class="text-input" id="t-text" rows="2" spellcheck="false" placeholder="Type your label"></textarea></label>
+            <div class="field"><span class="field-label">Font</span><div class="font-grid" id="t-fonts"></div></div>
+            <div class="field">
+              <span class="field-label">Size <output id="t-size-out"></output></span>
+              <div class="row"><input type="range" id="t-size" min="6" max="120" aria-label="Text size"><button class="btn btn-secondary btn-sm" id="t-fit" style="flex:none" title="Make the text as large as fits and center it">Fit</button></div>
+            </div>
+            <div class="field">
+              <span class="field-label">Style</span>
+              <div class="row">
+                <button class="toggle" id="t-bold" aria-pressed="false" title="Bold" style="font-weight:800">B</button>
+                <button class="toggle" id="t-italic" aria-pressed="false" title="Italic" style="font-style:italic;font-family:Georgia,serif">I</button>
+                <div class="seg" role="radiogroup" aria-label="Alignment">
+                  <label title="Align left"><input type="radio" name="t-align" value="left" aria-label="Align left"><span class="opt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg></span></label>
+                  <label title="Center"><input type="radio" name="t-align" value="center" aria-label="Center"><span class="opt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M5.5 18h13"/></svg></span></label>
+                  <label title="Align right"><input type="radio" name="t-align" value="right" aria-label="Align right"><span class="opt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M10 12h10M7 18h13"/></svg></span></label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="p-line">
+            <div class="field"><span class="field-label">Length <output id="l-length-out"></output></span><input type="range" id="l-length" min="8" max="400"></div>
+            <div class="field"><span class="field-label">Thickness <output id="l-thick-out"></output></span><input type="range" id="l-thick" min="1" max="12"></div>
+            <div class="field"><span class="field-label">Style</span>
+              <div class="seg" role="radiogroup" aria-label="Line style">
+                <label><input type="radio" name="l-dash" value="solid"><span class="opt">Solid</span></label>
+                <label><input type="radio" name="l-dash" value="dashed"><span class="opt">Dashed</span></label>
+                <label><input type="radio" name="l-dash" value="dotted"><span class="opt">Dotted</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div id="p-box">
+            <div class="field"><span class="field-label">Width <output id="b-w-out"></output></span><input type="range" id="b-w" min="8" max="400"></div>
+            <div class="field"><span class="field-label">Height <output id="b-h-out"></output></span><input type="range" id="b-h" min="8" max="96"></div>
+            <div class="field"><span class="field-label">Border <output id="b-thick-out"></output></span><input type="range" id="b-thick" min="1" max="10"></div>
+            <div class="field"><span class="field-label">Corner radius <output id="b-radius-out"></output></span><input type="range" id="b-radius" min="0" max="40"></div>
+            <div class="field"><label class="switch"><input type="checkbox" id="b-fill"> Filled</label></div>
+          </div>
+
+          <div id="p-symbol">
+            <div class="field"><span class="field-label">Symbol</span><div class="sym-grid" id="s-grid"></div></div>
+            <div class="field"><span class="field-label">Size <output id="s-size-out"></output></span><input type="range" id="s-size" min="10" max="96"></div>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Rotation</span>
+            <div class="seg" role="radiogroup" aria-label="Rotation">
+              <label><input type="radio" name="e-rot" value="0"><span class="opt">0°</span></label>
+              <label><input type="radio" name="e-rot" value="90"><span class="opt">90°</span></label>
+              <label><input type="radio" name="e-rot" value="180"><span class="opt">180°</span></label>
+              <label><input type="radio" name="e-rot" value="270"><span class="opt">270°</span></label>
+            </div>
+          </div>
+          <div class="field row">
+            <button class="btn btn-secondary btn-sm" id="act-center-x">Center ↔</button>
+            <button class="btn btn-secondary btn-sm" id="act-center-y">Center ↕</button>
+          </div>
+        </section>
+
+        <section class="group">
+          <h2>Label</h2>
+          <div class="field">
+            <span class="field-label">Print direction</span>
+            <div class="seg" role="radiogroup" aria-label="Print direction">
+              <label><input type="radio" name="flip" value="0"><span class="opt">Normal</span></label>
+              <label><input type="radio" name="flip" value="1"><span class="opt">Flipped 180°</span></label>
+            </div>
+            <p class="hint">If your print comes out upside down, choose Flipped.</p>
+          </div>
+          <div class="field"><label class="switch"><input type="checkbox" id="invert"> White on black</label></div>
+        </section>
+
+        <section class="group">
+          <h2>Layers</h2>
+          <ul class="layers" id="layers"></ul>
+          <p class="hint" id="layers-empty">Nothing on the label yet.</p>
+        </section>
+
+        <section class="group" id="printer-group">
+          <div class="group-head">
+            <h2>Printer</h2>
+            <button class="icon-btn" id="refresh-status" title="Refresh printer status" aria-label="Refresh printer status" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+            </button>
+          </div>
+          <p class="intro" id="printer-intro">Turn on the printer and close the NIIMBOT phone app, then click <strong>Connect</strong>. You can design without a printer.</p>
+          <dl class="facts" id="facts" hidden>
+            <dt>Model</dt><dd id="f-model">—</dd>
+            <dt>Battery</dt><dd id="f-battery">—</dd>
+            <dt>Paper</dt><dd id="f-paper">—</dd>
+            <dt>Roll</dt><dd id="f-roll">—</dd>
+          </dl>
+          <details class="log"><summary>Activity</summary><ol id="log"></ol></details>
+        </section>
+      </div>
+
+      <footer class="print-bar">
+        <div class="print-row">
+          <div class="stepper" aria-label="Copies">
+            <button type="button" id="copies-minus" aria-label="Fewer copies"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+            <input id="copies" type="number" min="1" max="10" value="1" aria-label="Copies">
+            <button type="button" id="copies-plus" aria-label="More copies"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+          <button class="btn btn-primary btn-lg" id="print" disabled>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+            <span id="print-text">Print label</span> <kbd id="print-kbd">⌘P</kbd>
+          </button>
+        </div>
+        <p class="print-status" id="status" role="status">Connect the printer to print.</p>
+      </footer>
+    </aside>
+  </main>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <div class="dialog-body">
+      <h2 id="help-title">How it works</h2>
+      <p>Design a label here, then print it straight from the browser over Bluetooth.</p>
+      <h3>Print your first label</h3>
+      <ol>
+        <li>Use <strong>Chrome or Edge</strong> on a computer with Bluetooth.</li>
+        <li>Turn on the D110_M and close the NIIMBOT phone app so it isn't holding the connection.</li>
+        <li>Click <strong>Connect</strong> and pick the printer in the browser's Bluetooth window.</li>
+        <li>Pick a template or add text, lines, boxes and symbols. Drag them around the label.</li>
+        <li>Print one copy and check it. If it's upside down, set <em>Print direction</em> to Flipped.</li>
+      </ol>
+      <h3>Shortcuts</h3>
+      <div class="keys" id="keys"></div>
+    </div>
+    <div class="dialog-foot">
+      <a class="btn btn-ghost btn-sm" id="help-repo" href="#">View source on GitHub</a>
+      <button class="btn btn-primary btn-sm" id="help-close">Got it</button>
+    </div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/niimbot-web-bluetooth@2.6.0/src/niimbot.js"></script>
+  <script>
+    (() => {
+      // ── Configuration: edit these when you fork or publish the project ─────────
+      const CONFIG = {
+        repoUrl: 'https://github.com/gabrielkirsten/niimbot-d100-print',   // GitHub repository URL shown in the header and help dialog
+        // Printer profile handed to niimbot-web-bluetooth. Common D110_M geometry: 96 px printable width at 203 dpi.
+        model: { id:2320, label:"Niimbot D110_M", task:"v4", dpi:203, density:3, label_type:1, speed:1, name_prefixes:["D110"] },
+        expectedModelId: 2320,
+        // `len` is the label length in dots and `paper` the roll width in dots; the print head covers 96 dots (12 mm).
+        sizes: {
+          '15x50': { name:'15 × 50 mm', len:400, paper:120, mm:[15,50] },
+          '12x40': { name:'12 × 40 mm', len:320, paper:96, mm:[12,40] },
+        },
+      };
+      const model = CONFIG.model, H = 96;
+      const $ = id => document.getElementById(id);
+
+      const FONTS = [
+        { id:'inter', name:'Inter', css:'Inter, Helvetica, Arial, sans-serif' },
+        { id:'oswald', name:'Oswald', css:'Oswald, "Arial Narrow", sans-serif' },
+        { id:'roboto-condensed', name:'Roboto Condensed', css:'"Roboto Condensed", "Arial Narrow", sans-serif' },
+        { id:'archivo-black', name:'Archivo Black', css:'"Archivo Black", "Arial Black", sans-serif' },
+        { id:'bebas', name:'Bebas Neue', css:'"Bebas Neue", Impact, sans-serif' },
+        { id:'playfair', name:'Playfair', css:'"Playfair Display", Georgia, serif' },
+        { id:'roboto-slab', name:'Roboto Slab', css:'"Roboto Slab", Rockwell, serif' },
+        { id:'space-mono', name:'Space Mono', css:'"Space Mono", Menlo, monospace' },
+        { id:'caveat', name:'Caveat', css:'Caveat, "Marker Felt", cursive' },
+        { id:'pacifico', name:'Pacifico', css:'Pacifico, "Brush Script MT", cursive' },
+      ];
+      const FONT_BY_ID = Object.fromEntries(FONTS.map(f => [f.id, f]));
+
+      // Symbols share one 24 × 24 path format between the canvas (Path2D) and the pickers (SVG).
+      const SYMBOLS = {
+        star:      { name:'Star',      parts:[{ d:'M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z' }] },
+        heart:     { name:'Heart',     parts:[{ d:'M12 21s-7.5-4.6-9.5-9.1C1.2 8.9 3 5 6.6 5c2.1 0 3.6 1.2 5.4 3.2C13.8 6.2 15.3 5 17.4 5 21 5 22.8 8.9 21.5 11.9 19.5 16.4 12 21 12 21z' }] },
+        check:     { name:'Check',     parts:[{ d:'M4 12.5l5 5L20 6.5', stroke:3 }] },
+        cross:     { name:'Cross',     parts:[{ d:'M6 6l12 12M18 6L6 18', stroke:3 }] },
+        arrow:     { name:'Arrow',     parts:[{ d:'M3 12h17M14 6l6 6-6 6', stroke:3 }] },
+        warning:   { name:'Warning',   parts:[{ d:'M12 2.5L23 21.5H1z M11 9h2v6.5h-2z M11 17h2v2.2h-2z' }] },
+        bolt:      { name:'Bolt',      parts:[{ d:'M13 2L4 14h7l-1 8 9-12h-7z' }] },
+        drop:      { name:'Drop',      parts:[{ d:'M12 2.5c3.5 4.6 7 8.6 7 12.2a7 7 0 0 1-14 0C5 11.1 8.5 7.1 12 2.5z' }] },
+        flame:     { name:'Flame',     parts:[{ d:'M12 2c1 3.5 5 5.8 5 11a5 5 0 0 1-10 0c0-2.4 1.1-3.9 2.3-5 .2 1.7 1 2.7 2.2 3C11 8.5 11 5 12 2z' }] },
+        snow:      { name:'Snowflake', parts:[{ d:'M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5', stroke:2.2 }] },
+        sun:       { name:'Sun',       parts:[{ d:'M12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 1 1 0-9z' }, { d:'M12 1.5v2.5M12 20v2.5M1.5 12H4M20 12h2.5M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8', stroke:2.2 }] },
+        leaf:      { name:'Leaf',      parts:[{ d:'M20 3C10 3 4 8 4 15c0 2 .5 3.5 1 5 1-4 4-8 9-10-4 3-6.5 6-7.5 10C17 20 21 12 20 3z' }] },
+        home:      { name:'Home',      parts:[{ d:'M3 11l9-8 9 8M5.5 9.5V21h5v-6h3v6h5V9.5', stroke:2.4 }] },
+        mail:      { name:'Mail',      parts:[{ d:'M3 5h18v14H3zM3 6l9 7 9-7', stroke:2.2 }] },
+        pin:       { name:'Pin',       parts:[{ d:'M12 22s7-6.6 7-12.5A7 7 0 0 0 5 9.5C5 15.4 12 22 12 22z M14.6 9.5a2.6 2.6 0 1 1-5.2 0 2.6 2.6 0 1 1 5.2 0z' }] },
+        calendar:  { name:'Calendar',  parts:[{ d:'M4 5h16v16H4zM4 10h16M8 3v4M16 3v4', stroke:2.2 }] },
+        music:     { name:'Music',     parts:[{ d:'M9 18V5l11-2v13', stroke:2.2 }, { d:'M9 18a3 3 0 1 1-6 0 3 3 0 1 1 6 0z M20 16a3 3 0 1 1-6 0 3 3 0 1 1 6 0z' }] },
+        dot:       { name:'Dot',       parts:[{ d:'M12 4a8 8 0 1 1 0 16 8 8 0 1 1 0-16z' }] },
+      };
+
+      const DESIGN_KEY = 'niimbot-print-design-v2';
+      const SAVED_KEY = 'niimbot-print-saved-v2';
+      const MEMORY_KEY = 'niimbot-d110m-roll-sizes-v1';
+      const COPIES_KEY = 'niimbot-print-copies-v1';
+
+      // Storage is a convenience only: everything must still work when it is unavailable.
+      function load(key, fallback) { try { const v = localStorage.getItem(key); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } }
+      function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ } }
+
+      // ── Document model ──────────────────────────────────────
+      let nextId = 1;
+      const uid = () => `e${Date.now().toString(36)}${(nextId++).toString(36)}`;
+      const DOTS_PER_MM = 8;   // 203 dpi
+      const MARGIN = 8;        // dots kept clear at each end of the label; printers rarely print right to the edge
+      // A label is one of the preset rolls or a custom length (the roll is 15 mm wide either way).
+      function sizeInfo(d) {
+        if (d.size === 'custom') return { name:`${d.lengthMm} mm long`, len:Math.round(d.lengthMm*DOTS_PER_MM), paper:120, mm:[15, d.lengthMm] };
+        return CONFIG.sizes[d.size];
+      }
+      const W = () => sizeInfo(doc).len;
+      const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+      const num = (v, lo, hi, d) => Number.isFinite(Number(v)) ? clamp(Number(v), lo, hi) : d;
+
+      function makeText(o = {}) { return { id:uid(), type:'text', text:'Text', font:'inter', size:36, bold:true, italic:false, align:'center', rot:0, cx:200, cy:48, ...o }; }
+      function makeLine(o = {}) { return { id:uid(), type:'line', length:240, thickness:3, dash:'solid', rot:0, cx:200, cy:48, ...o }; }
+      function makeBox(o = {}) { return { id:uid(), type:'box', w:392, h:88, thickness:3, radius:10, fill:false, rot:0, cx:200, cy:48, ...o }; }
+      function makeSymbol(o = {}) { return { id:uid(), type:'symbol', symbol:'star', size:48, rot:0, cx:200, cy:48, ...o }; }
+
+      function sanitizeEl(e) {
+        if (!e || typeof e !== 'object') return null;
+        const base = { id:typeof e.id === 'string' ? e.id : uid(), rot:[0,90,180,270].includes(Number(e.rot)) ? Number(e.rot) : 0, cx:num(e.cx,-400,800,200), cy:num(e.cy,-200,300,48) };
+        if (e.type === 'text') return { ...makeText(), ...base, text:String(e.text ?? '').slice(0,200), font:FONT_BY_ID[e.font] ? e.font : 'inter', size:num(e.size,6,160,36), bold:!!e.bold, italic:!!e.italic, align:['left','center','right'].includes(e.align) ? e.align : 'center' };
+        if (e.type === 'line') return { ...makeLine(), ...base, length:num(e.length,4,800,240), thickness:num(e.thickness,1,20,3), dash:['solid','dashed','dotted'].includes(e.dash) ? e.dash : 'solid' };
+        if (e.type === 'box') return { ...makeBox(), ...base, w:num(e.w,4,800,100), h:num(e.h,4,400,60), thickness:num(e.thickness,1,20,3), radius:num(e.radius,0,60,8), fill:!!e.fill };
+        if (e.type === 'symbol') return { ...makeSymbol(), ...base, symbol:SYMBOLS[e.symbol] ? e.symbol : 'star', size:num(e.size,6,200,48) };
+        return null;
+      }
+      function sanitizeDoc(d) {
+        const out = { size:'15x50', lengthMm:40, flip:false, invert:false, elements:[] };
+        if (!d || typeof d !== 'object') return out;
+        if (CONFIG.sizes[d.size] || d.size === 'custom') out.size = d.size;
+        out.lengthMm = Math.round(num(d.lengthMm, 20, 100, 40));
+        out.flip = !!d.flip; out.invert = !!d.invert;
+        if (Array.isArray(d.elements)) out.elements = d.elements.map(sanitizeEl).filter(Boolean).slice(0, 60);
+        return out;
+      }
+
+      // Templates are laid out for the label length `w` (in dots) so they fit either roll.
+      const TEMPLATES = [
+        { name:'Big text', make:w => ({ elements:[makeText({ text:'HELLO', size:64, cx:w/2 })] }) },
+        { name:'Title + note', make:w => ({ elements:[makeText({ text:'Spices', size:44, cx:w/2, cy:36 }), makeText({ text:'Kitchen · 2026', size:20, bold:false, cx:w/2, cy:74 })] }) },
+        { name:'Framed', make:w => ({ elements:[makeBox({ w:w-2*MARGIN, h:88, cx:w/2, radius:14 }), makeText({ text:'Documents', font:'playfair', size:40, cx:w/2 })] }) },
+        { name:'Lines', make:w => ({ elements:[makeLine({ length:w*.7, thickness:2, cx:w/2, cy:14 }), makeText({ text:'Earl Grey', font:'playfair', italic:true, size:42, cx:w/2 }), makeLine({ length:w*.7, thickness:2, cx:w/2, cy:82 })] }) },
+        { name:'Icon + text', make:w => ({ elements:[makeSymbol({ symbol:'leaf', size:56, cx:44 }), makeText({ text:'Basil', font:'oswald', size:52, align:'left', cx:w/2 + 30 })] }) },
+        { name:'Warning', make:w => ({ elements:[makeSymbol({ symbol:'warning', size:60, cx:42 }), makeText({ text:'FRAGILE', font:'archivo-black', bold:false, size:42, cx:w/2 + 34 })] }) },
+        { name:'Inverted', make:w => ({ invert:true, elements:[makeText({ text:'OFFICE', font:'bebas', bold:false, size:78, cx:w/2, cy:50 })] }) },
+        { name:'Cable flag', make:w => ({ elements:[makeText({ text:'HDMI', font:'roboto-condensed', size:30, cx:w*.25 }), makeLine({ length:80, thickness:2, dash:'dashed', rot:90, cx:w/2 }), makeText({ text:'HDMI', font:'roboto-condensed', size:30, cx:w*.75 })] }) },
+        // Prints a millimetre scale: the last number you can read is how much of the label really prints.
+        { name:'Ruler', make:w => {
+          const els = [];
+          for (let mm = 0; mm*DOTS_PER_MM <= w; mm += 5) {
+            const x = Math.min(w - 1, 1 + mm*DOTS_PER_MM), major = mm % 10 === 0;
+            els.push(makeLine({ length:major ? 26 : 16, thickness:2, rot:90, cx:x, cy:major ? 15 : 10 }));
+            if (major) els.push(makeText({ text:String(mm), size:20, bold:false, cx:clamp(x, MARGIN + 8, w - MARGIN - 13), cy:46 }));
+          }
+          els.push(makeText({ text:'mm · where does it end?', size:18, bold:false, cx:w/2, cy:76 }));
+          return { elements:els };
+        } },
+        { name:'Handwritten', make:w => ({ elements:[makeText({ text:'Made with love', font:'caveat', size:46, cx:w/2 - 14 }), makeSymbol({ symbol:'heart', size:28, cx:w - 40, cy:44 })] }) },
+      ];
+      function templateDoc(t, base) {
+        const w = sizeInfo(sanitizeDoc(base)).len, made = t.make(w);
+        return sanitizeDoc({ size:base.size, lengthMm:base.lengthMm, flip:base.flip, invert:!!made.invert, elements:made.elements });
+      }
+
+      let doc = sanitizeDoc(load(DESIGN_KEY, null));
+      if (!load(DESIGN_KEY, null)) doc = templateDoc(TEMPLATES[0], { size:'15x50' });
+      let selectedId = null, hoverId = null;
+
+      // ── History ─────────────────────────────────────────────
+      const snapshot = () => JSON.stringify(doc);
+      let past = [], future = [], lastSnap = snapshot();
+      function commit() {
+        const s = snapshot();
+        if (s === lastSnap) return;
+        past.push(lastSnap); if (past.length > 100) past.shift();
+        future = []; lastSnap = s; persist(); updateHistoryButtons();
+      }
+      function restore(s) { doc = sanitizeDoc(JSON.parse(s)); lastSnap = s; if (!getEl(selectedId)) selectedId = null; persist(); refreshAll(); }
+      function undo() { if (!past.length) return; future.push(lastSnap); restore(past.pop()); updateHistoryButtons(); }
+      function redo() { if (!future.length) return; past.push(lastSnap); restore(future.pop()); updateHistoryButtons(); }
+      function updateHistoryButtons() { $('undo').disabled = !past.length; $('redo').disabled = !future.length; }
+      let persistTimer;
+      function persist() { clearTimeout(persistTimer); persistTimer = setTimeout(() => save(DESIGN_KEY, doc), 250); }
+
+      // ── Geometry & rendering ────────────────────────────────
+      const mctx = document.createElement('canvas').getContext('2d');
+      const getEl = id => doc.elements.find(e => e.id === id);
+      function fontOf(el) { return `${el.italic ? 'italic ' : ''}${el.bold ? 700 : 400} ${el.size}px ${(FONT_BY_ID[el.font] || FONTS[0]).css}`; }
+      function textMetrics(el) {
+        mctx.font = fontOf(el);
+        const lines = el.text.split('\n'), lh = el.size*1.15;
+        const widths = lines.map(l => mctx.measureText(l).width);
+        const m = mctx.measureText('Hg');
+        const asc = m.fontBoundingBoxAscent ?? el.size*.8, desc = m.fontBoundingBoxDescent ?? el.size*.2;
+        return { lines, widths, lh, w:Math.max(4, ...widths), h:lines.length*lh, asc, desc };
+      }
+      function localSize(el) {
+        if (el.type === 'text') { const t = textMetrics(el); return { w:t.w, h:t.h }; }
+        if (el.type === 'line') return { w:el.length, h:el.thickness };
+        if (el.type === 'box') return { w:el.w, h:el.h };
+        return { w:el.size, h:el.size };
+      }
+      function worldBox(el) {
+        const { w, h } = localSize(el), side = el.rot === 90 || el.rot === 270;
+        const ww = side ? h : w, hh = side ? w : h;
+        return { x0:el.cx - ww/2, y0:el.cy - hh/2, x1:el.cx + ww/2, y1:el.cy + hh/2, w:ww, h:hh };
+      }
+      // Part of every element must stay on the label: pointer events only reach the label area,
+      // so an element dragged fully outside could never be grabbed again.
+      const MIN_VISIBLE = 24;   // dots
+      function clampCenter(el, cx, cy, len) {
+        const b = worldBox({ ...el, cx, cy });
+        const vx = Math.min(MIN_VISIBLE, b.w), vy = Math.min(MIN_VISIBLE, b.h);
+        const x0 = clamp(b.x0, vx - b.w, len - vx), y0 = clamp(b.y0, vy - b.h, H - vy);
+        return { cx:cx + (x0 - b.x0), cy:cy + (y0 - b.y0) };
+      }
+      // Brings back anything already off the label (a saved design, a shorter label length).
+      function rescueOffscreen() {
+        const len = W();
+        for (const el of doc.elements) { const c = clampCenter(el, el.cx, el.cy, len); el.cx = c.cx; el.cy = c.cy; }
+      }
+      function roundRect(c, x, y, w, h, r) {
+        r = Math.max(0, Math.min(r, w/2, h/2));
+        c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+      }
+      const pathCache = new Map();
+      const path2d = d => { if (!pathCache.has(d)) pathCache.set(d, new Path2D(d)); return pathCache.get(d); };
+
+      function drawEl(c, el, ink) {
+        c.save(); c.translate(el.cx, el.cy); c.rotate(el.rot*Math.PI/180);
+        c.fillStyle = c.strokeStyle = ink;
+        if (el.type === 'text') {
+          const t = textMetrics(el);
+          c.font = fontOf(el); c.textBaseline = 'alphabetic'; c.textAlign = el.align;
+          const x = el.align === 'left' ? -t.w/2 : el.align === 'right' ? t.w/2 : 0;
+          t.lines.forEach((l, i) => c.fillText(l, x, -t.h/2 + i*t.lh + (t.lh - (t.asc + t.desc))/2 + t.asc));
+        } else if (el.type === 'line') {
+          const th = el.thickness, L = el.length;
+          if (el.dash === 'solid') c.fillRect(-L/2, -th/2, L, th);
+          else {
+            c.lineWidth = th; c.lineCap = el.dash === 'dotted' ? 'round' : 'butt';
+            c.setLineDash(el.dash === 'dotted' ? [0.01, th*2.2] : [th*3.5, th*2.2]);
+            const inset = el.dash === 'dotted' ? th/2 : 0;
+            c.beginPath(); c.moveTo(-L/2 + inset, 0); c.lineTo(L/2 - inset, 0); c.stroke();
+          }
+        } else if (el.type === 'box') {
+          if (el.fill) { roundRect(c, -el.w/2, -el.h/2, el.w, el.h, el.radius); c.fill(); }
+          else { const t = el.thickness; c.lineWidth = t; roundRect(c, -el.w/2 + t/2, -el.h/2 + t/2, el.w - t, el.h - t, Math.max(0, el.radius - t/2)); c.stroke(); }
+        } else if (el.type === 'symbol') {
+          const s = el.size/24; c.scale(s, s); c.translate(-12, -12);
+          for (const p of SYMBOLS[el.symbol].parts) {
+            if (p.stroke) { c.lineWidth = p.stroke; c.lineCap = 'round'; c.lineJoin = 'round'; c.stroke(path2d(p.d)); }
+            else c.fill(path2d(p.d), 'evenodd');
+          }
+        }
+        c.restore();
+      }
+
+      // Renders the design as the label is held (length × 96) and reduces it to pure black
+      // and white with the driver's own threshold, so the preview is exactly what prints.
+      function renderDesign(d, out = document.createElement('canvas')) {
+        const w = sizeInfo(d).len;
+        out.width = w; out.height = H;
+        const c = out.getContext('2d');
+        c.fillStyle = d.invert ? '#000' : '#fff'; c.fillRect(0, 0, w, H);
+        for (const el of d.elements) drawEl(c, el, d.invert ? '#fff' : '#000');
+        const img = c.getImageData(0, 0, w, H), p = img.data;
+        for (let i = 0; i < p.length; i += 4) {
+          const v = (0.299*p[i] + 0.587*p[i+1] + 0.114*p[i+2]) < 128 ? 0 : 255;
+          p[i] = p[i+1] = p[i+2] = v; p[i+3] = 255;
+        }
+        c.putImageData(img, 0, 0);
+        return out;
+      }
+      // Turns the design into the 96-dot-wide strip the print head expects.
+      function renderForPrint(d) {
+        const design = renderDesign(d), w = design.width;
+        const out = document.createElement('canvas'); out.width = H; out.height = w;
+        const o = out.getContext('2d');
+        o.fillStyle = '#fff'; o.fillRect(0, 0, H, w);
+        o.translate(H/2, w/2); o.rotate((d.flip ? 270 : 90)*Math.PI/180); o.drawImage(design, -w/2, -H/2);
+        return out;
+      }
+
+      // Web fonts load lazily: request any that a text element needs, then redraw.
+      const pendingFonts = new Set();
+      function ensureFonts(d) {
+        if (!document.fonts) return;
+        for (const el of d.elements) if (el.type === 'text') {
+          const f = fontOf(el);
+          if (!pendingFonts.has(f) && !document.fonts.check(f)) {
+            pendingFonts.add(f);
+            document.fonts.load(f).then(() => { pendingFonts.delete(f); scheduleDraw(); renderCards(); }, () => pendingFonts.delete(f));
+          }
+        }
+      }
+
+      // ── Stage layout & overlay ──────────────────────────────
+      let k = 1; // screen pixels per dot
+      let snapLines = [];
+      function layoutPaper() {
+        const S = sizeInfo(doc), stage = $('stage');
+        k = Math.max(.6, Math.min(4, (stage.clientWidth - 90)/S.len, (stage.clientHeight - 150)/S.paper));
+        const band = (S.paper - H)/2*k;
+        Object.assign($('paper').style, { width:`${S.len*k}px`, height:`${S.paper*k}px`, borderRadius:`${Math.max(4, 10*k)}px` });
+        $('frame').style.width = `${S.len*k}px`;
+        $('np-top').style.height = $('np-bottom').style.height = `${band}px`;
+        Object.assign($('printable').style, { top:`${band}px`, height:`${H*k}px` });
+        $('printable').style.setProperty('--m', `${MARGIN*k}px`);
+        Object.assign($('overlay').style, { top:`${band}px`, width:`${S.len*k}px`, height:`${H*k}px` });
+        $('dim-x').textContent = `${S.mm[1]} mm`; $('dim-y').textContent = `${S.mm[0]} mm`;
+        $('meta-size').textContent = S.name; $('meta-dots').textContent = `${S.len} × ${H} dots · 203 dpi`;
+      }
+      function renderOverlay() {
+        const ov = $('overlay'); ov.replaceChildren();
+        const addBox = (el, cls) => {
+          const b = worldBox(el), div = document.createElement('div');
+          div.className = `box ${cls}`;
+          Object.assign(div.style, { left:`${b.x0*k}px`, top:`${b.y0*k}px`, width:`${Math.max(b.w*k, 6)}px`, height:`${Math.max(b.h*k, 6)}px` });
+          if (cls === 'sel') { const hd = document.createElement('div'); hd.className = 'handle'; hd.title = 'Drag to resize'; div.append(hd); }
+          ov.append(div);
+        };
+        const hov = getEl(hoverId);
+        if (hov && hoverId !== selectedId) addBox(hov, 'hover');
+        const sel = getEl(selectedId);
+        if (sel) addBox(sel, 'sel');
+        for (const s of snapLines) {
+          const g = document.createElement('div'); g.className = 'snap';
+          Object.assign(g.style, s.x != null ? { left:`${s.x*k - .5}px`, top:'-14px', width:'1px', height:`${H*k + 28}px` } : { top:`${s.y*k - .5}px`, left:'-14px', height:'1px', width:`${W()*k + 28}px` });
+          ov.append(g);
+        }
+      }
+
+      let drawQueued = false;
+      function scheduleDraw() { if (!drawQueued) { drawQueued = true; requestAnimationFrame(() => { drawQueued = false; draw(); }); } }
+      function draw() {
+        ensureFonts(doc);
+        renderDesign(doc, $('preview'));
+        layoutPaper();
+        renderOverlay();
+        $('empty-hint').hidden = doc.elements.length > 0;
+        const w = W();
+        $('bounds-warn').hidden = !doc.elements.some(el => { if (el.type === 'line') return false; const b = worldBox(el); return b.x0 < MARGIN - .5 || b.x1 > w - MARGIN + .5 || b.y0 < -.5 || b.y1 > H + .5; });
+        renderLayers();
+        updatePrintButton();
+        persist();
+      }
+
+      // ── Pointer interaction (move, resize, snap) ────────────
+      function toDots(e) { const r = $('overlay').getBoundingClientRect(); return { x:(e.clientX - r.left)/k, y:(e.clientY - r.top)/k }; }
+      function hitTest(p) {
+        for (let i = doc.elements.length - 1; i >= 0; i--) {
+          const el = doc.elements[i], b = worldBox(el), pad = Math.max(2, 6/k - Math.min(b.w, b.h)/2);
+          if (p.x >= b.x0 - pad && p.x <= b.x1 + pad && p.y >= b.y0 - pad && p.y <= b.y1 + pad) return el;
+        }
+        return null;
+      }
+      let drag = null;
+      const overlay = $('overlay');
+      overlay.addEventListener('pointerdown', e => {
+        if (e.button !== 0) return;
+        const p = toDots(e);
+        if (e.target.classList.contains('handle')) {
+          const el = getEl(selectedId);
+          drag = { mode:'resize', el, start:{ ...el }, box:worldBox(el) };
+        } else {
+          const el = hitTest(p);
+          select(el ? el.id : null);
+          if (!el) return;
+          drag = { mode:'move', el, start:{ ...el }, px:p.x, py:p.y };
+        }
+        overlay.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      overlay.addEventListener('pointermove', e => {
+        const p = toDots(e);
+        if (!drag) {
+          const el = hitTest(p), id = el ? el.id : null;
+          overlay.style.cursor = el ? 'move' : 'default';
+          if (id !== hoverId) { hoverId = id; renderOverlay(); }
+          return;
+        }
+        const el = drag.el, s = drag.start;
+        if (drag.mode === 'move') {
+          let nx = s.cx + (p.x - drag.px), ny = s.cy + (p.y - drag.py);
+          snapLines = [];
+          if ($('guides').checked && !e.altKey) {
+            const th = 6/k, w = W();
+            const b = worldBox({ ...el, cx:nx, cy:ny });
+            const others = doc.elements.filter(o => o.id !== el.id);
+            const xs = [[w/2, 0], ...others.map(o => [o.cx, 0]), [0, -b.w/2], [w, b.w/2]];
+            const ys = [[H/2, 0], ...others.map(o => [o.cy, 0]), [0, -b.h/2], [H, b.h/2]];
+            for (const [t, off] of xs) if (Math.abs(nx + off - t) < th) { nx = t - off; snapLines.push({ x:t }); break; }
+            for (const [t, off] of ys) if (Math.abs(ny + off - t) < th) { ny = t - off; snapLines.push({ y:t }); break; }
+          }
+          const c = clampCenter(el, nx, ny, W());
+          el.cx = Math.round(c.cx*2)/2; el.cy = Math.round(c.cy*2)/2;
+        } else {
+          const b0 = drag.box, fx = b0.x0, fy = b0.y0;
+          const dw = Math.max(4, p.x - fx), dh = Math.max(4, p.y - fy);
+          const side = el.rot === 90 || el.rot === 270;
+          if (el.type === 'text' || el.type === 'symbol') {
+            const f = Math.max(dw/b0.w, dh/b0.h);
+            el.size = Math.round(clamp(s.size*f, 6, el.type === 'text' ? 160 : 200));
+          } else if (el.type === 'box') {
+            el.w = Math.round(side ? dh : dw); el.h = Math.round(side ? dw : dh);
+          } else if (el.type === 'line') {
+            el.length = Math.round(side ? dh : dw);
+          }
+          const nb = worldBox(el);
+          el.cx = fx + nb.w/2; el.cy = fy + nb.h/2;
+        }
+        syncSelectionPanel();
+        scheduleDraw();
+      });
+      const endDrag = () => { if (!drag) return; drag = null; snapLines = []; commit(); scheduleDraw(); };
+      overlay.addEventListener('pointerup', endDrag);
+      overlay.addEventListener('pointercancel', endDrag);
+      overlay.addEventListener('pointerleave', () => { if (!drag && hoverId) { hoverId = null; renderOverlay(); } });
+      overlay.addEventListener('dblclick', e => {
+        const el = hitTest(toDots(e));
+        if (el?.type === 'text') { $('t-text').focus(); $('t-text').select(); }
+      });
+      $('stage').addEventListener('pointerdown', e => { if (e.target === $('stage') || e.target === $('frame')) select(null); });
+
+      // ── Selection & inspector ───────────────────────────────
+      const TYPE_LABEL = { text:'Text', line:'Line', box:'Box', symbol:'Symbol' };
+      const TYPE_GLYPH = {
+        text:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5h14M12 5v15"/></svg>',
+        line:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M4 12h16"/></svg>',
+        box:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="6" width="16" height="12" rx="2.5"/></svg>',
+      };
+      function symbolSvg(id, size = 20) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true">${SYMBOLS[id].parts.map(p => p.stroke
+          ? `<path d="${p.d}" fill="none" stroke="currentColor" stroke-width="${p.stroke}" stroke-linecap="round" stroke-linejoin="round"/>`
+          : `<path d="${p.d}" fill="currentColor" fill-rule="evenodd"/>`).join('')}</svg>`;
+      }
+      const glyphFor = el => el.type === 'symbol' ? symbolSvg(el.symbol, 14) : TYPE_GLYPH[el.type];
+      const nameFor = el => el.type === 'text' ? (el.text.split('\n')[0].trim() || 'Empty text') : el.type === 'symbol' ? SYMBOLS[el.symbol].name : TYPE_LABEL[el.type];
+
+      function select(id) {
+        selectedId = id;
+        syncSelectionPanel();
+        renderOverlay(); renderLayers();
+      }
+      function setRadio(name, value) { for (const el of document.querySelectorAll(`input[name="${name}"]`)) el.checked = el.value === String(value); }
+      function setRange(id, value, max) { const r = $(id); if (max != null) r.max = max; r.value = value; const o = $(`${id}-out`); if (o) o.textContent = `${Math.round(value)} px`; }
+      function syncSelectionPanel() {
+        const el = getEl(selectedId);
+        $('sel-group').hidden = !el;
+        if (!el) return;
+        $('sel-badge').innerHTML = glyphFor(el); $('sel-name').textContent = TYPE_LABEL[el.type];
+        for (const t of ['text','line','box','symbol']) $(`p-${t}`).hidden = el.type !== t;
+        setRadio('e-rot', el.rot);
+        if (el.type === 'text') {
+          if (document.activeElement !== $('t-text')) $('t-text').value = el.text;
+          for (const b of $('t-fonts').children) b.setAttribute('aria-pressed', String(b.dataset.font === el.font));
+          setRange('t-size', el.size);
+          $('t-bold').setAttribute('aria-pressed', String(el.bold));
+          $('t-italic').setAttribute('aria-pressed', String(el.italic));
+          setRadio('t-align', el.align);
+        } else if (el.type === 'line') {
+          setRange('l-length', el.length, Math.max(W(), el.length)); setRange('l-thick', el.thickness); setRadio('l-dash', el.dash);
+        } else if (el.type === 'box') {
+          setRange('b-w', el.w, Math.max(W(), el.w)); setRange('b-h', el.h, Math.max(W(), el.h)); setRange('b-thick', el.thickness); setRange('b-radius', el.radius);
+          $('b-fill').checked = el.fill;
+        } else if (el.type === 'symbol') {
+          for (const b of $('s-grid').children) b.setAttribute('aria-pressed', String(b.dataset.symbol === el.symbol));
+          setRange('s-size', el.size);
+        }
+      }
+      // Live edits redraw immediately; the matching `change` event records one undo step.
+      function editSelected(patch, record) {
+        const el = getEl(selectedId); if (!el) return;
+        Object.assign(el, patch);
+        syncSelectionPanel(); scheduleDraw();
+        if (record) commit();
+      }
+      function bindRange(id, key) {
+        $(id).addEventListener('input', e => editSelected({ [key]:Number(e.target.value) }));
+        $(id).addEventListener('change', commit);
+      }
+      $('t-text').addEventListener('input', e => editSelected({ text:e.target.value }));
+      $('t-text').addEventListener('change', commit);
+      bindRange('t-size', 'size'); bindRange('l-length', 'length'); bindRange('l-thick', 'thickness');
+      bindRange('b-w', 'w'); bindRange('b-h', 'h'); bindRange('b-thick', 'thickness'); bindRange('b-radius', 'radius'); bindRange('s-size', 'size');
+      $('t-bold').addEventListener('click', () => editSelected({ bold:!getEl(selectedId).bold }, true));
+      $('t-italic').addEventListener('click', () => editSelected({ italic:!getEl(selectedId).italic }, true));
+      $('b-fill').addEventListener('change', e => editSelected({ fill:e.target.checked }, true));
+      for (const [name, key, cast] of [['t-align','align',String], ['l-dash','dash',String], ['e-rot','rot',Number]])
+        for (const r of document.querySelectorAll(`input[name="${name}"]`)) r.addEventListener('change', () => editSelected({ [key]:cast(r.value) }, true));
+      for (const f of FONTS) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'font-btn';
+        b.dataset.font = f.id; b.textContent = f.name; b.style.fontFamily = f.css;
+        b.addEventListener('click', () => editSelected({ font:f.id }, true));
+        $('t-fonts').append(b);
+      }
+      for (const [id, s] of Object.entries(SYMBOLS)) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'sym-btn'; b.dataset.symbol = id;
+        b.title = s.name; b.setAttribute('aria-label', s.name); b.innerHTML = symbolSvg(id);
+        b.addEventListener('click', () => editSelected({ symbol:id }, true));
+        $('s-grid').append(b);
+        const a = b.cloneNode(true); a.removeAttribute('aria-pressed');
+        a.addEventListener('click', () => { $('symbol-pop').hidden = true; $('add-symbol').setAttribute('aria-expanded', 'false'); addElement(makeSymbol({ symbol:id })); });
+        $('symbol-pop-grid').append(a);
+      }
+      $('t-fit').addEventListener('click', () => {
+        const el = getEl(selectedId); if (!el || el.type !== 'text') return;
+        const side = el.rot === 90 || el.rot === 270, maxW = side ? H - 12 : W() - 2*MARGIN - 4, maxH = side ? W() - 2*MARGIN - 4 : H - 8;
+        let size = 160;
+        while (size > 6) { const t = textMetrics({ ...el, size }); if (t.w <= maxW && t.lines.length*size*.95 <= maxH) break; size--; }
+        editSelected({ size, cx:W()/2, cy:H/2 }, true);
+      });
+
+      function addElement(el) {
+        const w = W();
+        if (el.cx === 200 && el.cy === 48) { el.cx = w/2; el.cy = H/2; }
+        if (el.type === 'line' && el.length === 240) el.length = Math.round(w*.6);
+        if (el.type === 'box' && el.w === 392) el.w = w - 2*MARGIN;
+        // Offset copies so a new element never hides exactly on top of another.
+        while (doc.elements.some(o => Math.abs(o.cx - el.cx) < 1 && Math.abs(o.cy - el.cy) < 1 && o.type === el.type)) { el.cx += 12; el.cy = Math.min(H - 8, el.cy + 8); }
+        doc.elements.push(el); commit(); select(el.id); draw();
+        if (el.type === 'text') { $('t-text').focus(); $('t-text').select(); }
+      }
+      $('add-text').addEventListener('click', () => addElement(makeText({ text:'Text', size:36 })));
+      $('add-line').addEventListener('click', () => addElement(makeLine()));
+      $('add-box').addEventListener('click', () => addElement(makeBox()));
+      $('add-symbol').addEventListener('click', e => {
+        const pop = $('symbol-pop'); pop.hidden = !pop.hidden;
+        $('add-symbol').setAttribute('aria-expanded', String(!pop.hidden)); e.stopPropagation();
+      });
+      document.addEventListener('pointerdown', e => { if (!$('symbol-pop').hidden && !e.target.closest('#symbol-pop, #add-symbol')) { $('symbol-pop').hidden = true; $('add-symbol').setAttribute('aria-expanded', 'false'); } });
+
+      function removeSelected() { const i = doc.elements.findIndex(e => e.id === selectedId); if (i < 0) return; doc.elements.splice(i, 1); selectedId = null; commit(); syncSelectionPanel(); draw(); }
+      function duplicateSelected() { const el = getEl(selectedId); if (!el) return; addElement({ ...el, id:uid(), cx:el.cx + 10, cy:Math.min(H, el.cy + 6) }); }
+      function moveLayer(dir) {
+        const i = doc.elements.findIndex(e => e.id === selectedId), j = i + dir;
+        if (i < 0 || j < 0 || j >= doc.elements.length) return;
+        [doc.elements[i], doc.elements[j]] = [doc.elements[j], doc.elements[i]]; commit(); draw();
+      }
+      $('act-delete').addEventListener('click', removeSelected);
+      $('act-duplicate').addEventListener('click', duplicateSelected);
+      $('act-forward').addEventListener('click', () => moveLayer(1));
+      $('act-backward').addEventListener('click', () => moveLayer(-1));
+      $('act-center-x').addEventListener('click', () => editSelected({ cx:W()/2 }, true));
+      $('act-center-y').addEventListener('click', () => editSelected({ cy:H/2 }, true));
+
+      function renderLayers() {
+        const ul = $('layers'); ul.replaceChildren();
+        $('layers-empty').hidden = doc.elements.length > 0;
+        for (const el of [...doc.elements].reverse()) {
+          const li = document.createElement('li'), b = document.createElement('button');
+          b.type = 'button'; if (el.id === selectedId) b.setAttribute('aria-current', 'true');
+          const g = document.createElement('span'); g.className = 'glyph'; g.innerHTML = glyphFor(el);
+          const n = document.createElement('span'); n.className = 'name'; n.textContent = nameFor(el);
+          b.append(g, n); b.addEventListener('click', () => select(el.id));
+          li.append(b); ul.append(li);
+        }
+      }
+
+      // ── Label settings ──────────────────────────────────────
+      function syncLabelControls() {
+        setRadio('size', doc.size); setRadio('flip', doc.flip ? 1 : 0); $('invert').checked = doc.invert;
+        $('custom-length').hidden = doc.size !== 'custom';
+        $('c-len').value = doc.lengthMm; $('c-len-out').textContent = `${doc.lengthMm} mm`;
+      }
+      // Changing the length rescales positions along it, so a design keeps its proportions.
+      function setSize(size, lengthMm) {
+        if (!CONFIG.sizes[size] && size !== 'custom') return;
+        const before = W();
+        doc.size = size;
+        if (lengthMm != null) doc.lengthMm = Math.round(clamp(lengthMm, 20, 100));
+        const f = W() / before;
+        if (f !== 1) for (const el of doc.elements) el.cx *= f;
+        rescueOffscreen();
+      }
+      for (const r of document.querySelectorAll('input[name=size]')) r.addEventListener('change', () => { setSize(r.value); commit(); syncLabelControls(); syncSelectionPanel(); draw(); renderCards(); saveRollChoice(); });
+      $('c-len').addEventListener('input', e => { setSize('custom', Number(e.target.value)); syncLabelControls(); syncSelectionPanel(); scheduleDraw(); });
+      $('c-len').addEventListener('change', () => { commit(); renderCards(); saveRollChoice(); });
+      for (const r of document.querySelectorAll('input[name=flip]')) r.addEventListener('change', () => { doc.flip = r.value === '1'; commit(); draw(); });
+      $('invert').addEventListener('change', e => { doc.invert = e.target.checked; commit(); draw(); });
+      $('guides').addEventListener('change', e => { $('frame').className = `label-frame ${e.target.checked ? 'guides-on' : 'guides-off'}`; });
+
+      function refreshAll() { rescueOffscreen(); syncLabelControls(); syncSelectionPanel(); draw(); renderCards(); }
+
+      // ── Templates and saved designs ─────────────────────────
+      let tab = 'templates';
+      const docKey = d => JSON.stringify([d.size, d.size === 'custom' ? d.lengthMm : 0, d.flip, d.invert, d.elements.map(({ id, ...rest }) => rest)]);
+      function addSaved(d) {
+        const key = docKey(d);
+        const list = [JSON.parse(JSON.stringify(d)), ...load(SAVED_KEY, []).filter(x => docKey(sanitizeDoc(x)) !== key)].slice(0, 24);
+        save(SAVED_KEY, list);
+        if (tab === 'saved') renderCards();
+        $('tab-saved').textContent = `Saved & recent (${list.length})`;
+      }
+      function thumbFor(d) {
+        const src = renderDesign(d), t = document.createElement('canvas');
+        t.width = src.width; t.height = src.height; t.getContext('2d').drawImage(src, 0, 0);
+        return t;
+      }
+      function card(d, caption, onOpen, onRemove) {
+        const item = document.createElement('div'); item.className = 'card';
+        const open = document.createElement('button'); open.className = 'card-open'; open.type = 'button';
+        const cap = document.createElement('span'); cap.textContent = caption;
+        open.title = caption; open.append(thumbFor(d), cap);
+        open.addEventListener('click', onOpen);
+        item.append(open);
+        if (onRemove) {
+          const rm = document.createElement('button'); rm.className = 'card-remove'; rm.type = 'button';
+          rm.setAttribute('aria-label', `Remove ${caption}`);
+          rm.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+          rm.addEventListener('click', onRemove); item.append(rm);
+        }
+        return item;
+      }
+      function loadDoc(d, msg) { doc = sanitizeDoc(JSON.parse(JSON.stringify(d))); selectedId = null; commit(); refreshAll(); toast(msg); }
+      function renderCards() {
+        const wrap = $('cards'); wrap.replaceChildren();
+        $('tab-templates').setAttribute('aria-selected', String(tab === 'templates'));
+        $('tab-saved').setAttribute('aria-selected', String(tab === 'saved'));
+        const saved = load(SAVED_KEY, []);
+        $('tab-saved').textContent = saved.length ? `Saved & recent (${saved.length})` : 'Saved & recent';
+        if (tab === 'templates') {
+          for (const t of TEMPLATES) {
+            const d = templateDoc(t, doc); ensureFonts(d);
+            wrap.append(card(d, t.name, () => loadDoc(templateDoc(t, doc), `Template applied · ${isMac ? '⌘Z' : 'Ctrl+Z'} to undo`)));
+          }
+          return;
+        }
+        if (!saved.length) {
+          const p = document.createElement('p'); p.className = 'cards-empty';
+          p.textContent = 'Labels you print or save show up here, so you can reprint them in one click.';
+          wrap.append(p); return;
+        }
+        saved.forEach((raw, i) => {
+          const d = sanitizeDoc(raw); ensureFonts(d);
+          const caption = d.elements.filter(e => e.type === 'text').map(e => e.text.trim()).filter(Boolean).join(' · ') || 'Untitled label';
+          wrap.append(card(d, `${caption} (${sizeInfo(d).name})`, () => loadDoc(d, 'Design loaded'),
+            () => { const list = load(SAVED_KEY, []); list.splice(i, 1); save(SAVED_KEY, list); renderCards(); }));
+        });
+      }
+      $('tab-templates').addEventListener('click', () => { tab = 'templates'; renderCards(); });
+      $('tab-saved').addEventListener('click', () => { tab = 'saved'; renderCards(); });
+      $('save').addEventListener('click', () => { addSaved(doc); toast('Saved to your designs'); });
+
+      // ── Feedback ────────────────────────────────────────────
+      let toastTimer;
+      function toast(msg, kind) {
+        const t = $('toast'); t.textContent = msg; t.className = `toast show${kind === 'err' ? ' err' : ''}`;
+        clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = 'toast'; }, 3200);
+      }
+      function log(msg, kind) {
+        const li = document.createElement('li'); if (kind === 'err') li.className = 'err';
+        const time = document.createElement('time'); time.textContent = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+        li.append(time, msg); $('log').prepend(li);
+      }
+      let statusSticky = false;
+      function setStatus(msg, kind) { const s = $('status'); s.textContent = msg; s.className = `print-status${kind === 'err' ? ' err' : ''}`; }
+      function stickyStatus(msg, kind) { setStatus(msg, kind); statusSticky = true; }
+      function setRoll(msg) { $('roll-status').textContent = msg; }
+
+      // ── Printer connection ──────────────────────────────────
+      const hasDriver = !!window.Niimbot;
+      const hasBluetooth = hasDriver ? Niimbot.isSupported() : !!navigator.bluetooth;
+      let connState = 'idle', rollBarcode = null;
+      function setConn(state, chipText) {
+        connState = state;
+        $('chip').dataset.state = state; $('chip-text').textContent = chipText;
+        const live = state === 'connected' || state === 'printing';
+        $('connect-text').textContent = live ? 'Disconnect' : state === 'connecting' ? 'Connecting…' : 'Connect';
+        $('connect').className = `btn btn-sm ${live ? 'btn-secondary' : 'btn-primary'}`;
+        $('connect').disabled = state === 'connecting' || state === 'printing' || !hasDriver;
+        $('detect').disabled = $('refresh-status').disabled = state !== 'connected';
+        $('facts').hidden = !live; $('printer-intro').hidden = live;
+        updatePrintButton();
+      }
+      function updatePrintButton() {
+        const hasContent = doc.elements.length > 0;
+        $('print').disabled = connState !== 'connected' || !hasContent;
+        if (connState === 'printing' || statusSticky) return;
+        if (connState !== 'connected') setStatus(!hasDriver ? 'Printer driver unavailable.' : !hasBluetooth ? 'Bluetooth printing needs Chrome or Edge.' : 'Connect the printer to print.');
+        else setStatus(hasContent ? 'Ready to print.' : 'Add something to the label to print.');
+      }
+
+      function readRollMemory() { return load(MEMORY_KEY, {}) || {}; }
+      function rememberRollSize(barcode, size) { if (!barcode) return; const r = readRollMemory(); r[barcode] = size; save(MEMORY_KEY, r); }
+      // A roll is remembered as a preset id ("15x50") or "custom:<mm>".
+      const rollValue = d => d.size === 'custom' ? `custom:${d.lengthMm}` : d.size;
+      function applyRememberedRoll(barcode) {
+        const saved = readRollMemory()[barcode];
+        if (typeof saved !== 'string') return false;
+        const custom = /^custom:(\d+)$/.exec(saved);
+        if (!custom && !CONFIG.sizes[saved]) return false;
+        if (rollValue(doc) !== saved) { custom ? setSize('custom', Number(custom[1])) : setSize(saved); commit(); refreshAll(); }
+        setRoll(`Roll recognized: ${sizeInfo(doc).name}, set automatically.`);
+        return true;
+      }
+      // The roll's tag identifies the roll but not its dimensions, so the size is learned once
+      // (the first time you choose it for that roll) and then set automatically on every connect.
+      function describeRoll() {
+        if (!rollBarcode) setRoll('No readable roll tag. Choose the label size manually.');
+        else if (!applyRememberedRoll(rollBarcode)) setRoll('New roll detected. Choose its size once and it will be set automatically from now on.');
+      }
+      function saveRollChoice() {
+        if (!rollBarcode || connState !== 'connected') return;
+        rememberRollSize(rollBarcode, rollValue(doc));
+        setRoll(`${sizeInfo(doc).name} saved for this roll. It will be set automatically next time.`);
+        log(`Remembered roll ${rollBarcode} as ${rollValue(doc)}`);
+      }
+      const isLinkLost = err => /not connected/i.test(String(err?.message || err));
+      function resetFacts() { for (const id of ['f-model','f-battery','f-paper','f-roll']) { $(id).textContent = '—'; $(id).className = ''; } rollBarcode = null; }
+      function onLinkLost(err) {
+        log(String(err?.message || err), 'err'); resetFacts();
+        setConn('error', 'Connection lost'); toast('Printer disconnected. Reconnect to keep printing.', 'err');
+      }
+
+      async function readStatus() {
+        const state = await Niimbot.getStatus();
+        const tag = state?.decoded?.rfid;
+        const bat = Niimbot.battery ? Niimbot.battery(state) : null;
+        const ready = Niimbot.readiness ? Niimbot.readiness(state) : null;
+        const fb = $('f-battery');
+        if (bat?.percent != null) { fb.textContent = `${bat.percent}%`; const m = document.createElement('span'); m.className = 'meter'; const bar = document.createElement('i'); bar.style.width = `${bat.percent}%`; m.append(bar); fb.append(m); }
+        else fb.textContent = '—';
+        const fp = $('f-paper');
+        fp.textContent = ready?.ready == null ? '—' : ready.ready ? 'Ready' : ready.reasons.join(', ');
+        fp.className = ready?.ready === false ? 'bad' : '';
+        rollBarcode = tag?.tagPresent ? tag.barCode : null;
+        const fr = $('f-roll'); fr.title = rollBarcode ? `Barcode ${rollBarcode}` : '';
+        if (!rollBarcode) fr.textContent = 'No tag read';
+        else if (tag.capacity > 0 && tag.usedPaper != null) fr.textContent = `${Math.max(0, tag.capacity - tag.usedPaper)} of ${tag.capacity} left`;
+        else fr.textContent = rollBarcode;
+        return state;
+      }
+
+      async function connect() {
+        if (!hasDriver) { toast("The printer driver didn't load. Check your internet connection and reload.", 'err'); return; }
+        if (!hasBluetooth) { toast('Web Bluetooth is unavailable. Open this page in Chrome or Edge.', 'err'); return; }
+        statusSticky = false; setConn('connecting', 'Choose your printer…');
+        setStatus('Choose your NIIMBOT printer in the Bluetooth window…');
+        try {
+          const info = await Niimbot.identify(model);
+          if (!info || info.modelId !== CONFIG.expectedModelId) throw new Error(`Expected D110_M (model ${CONFIG.expectedModelId}), found ${info?.label || `model ${info?.modelId ?? 'unknown'}`}.`);
+          $('f-model').textContent = `D110_M · ${info.modelId}${info.protocolVersion ? ` · v${info.protocolVersion}` : ''}`;
+          log(`Connected to ${info.deviceName || 'D110_M'} (model ${info.modelId}${info.protocolVersion ? `, protocol ${info.protocolVersion}` : ''})`);
+          setConn('connected', 'D110_M connected');
+          try {
+            setRoll('Reading the label roll…');
+            await readStatus();
+            describeRoll();
+          } catch (e) {
+            if (isLinkLost(e)) return onLinkLost(e);
+            setRoll("Couldn't read the roll tag. Choose the label size manually."); log(`Status read failed: ${e.message || e}`, 'err');
+          }
+        } catch (err) {
+          const msg = err.message || String(err);
+          log(msg, 'err');
+          if (err?.name === 'NotFoundError') setConn('idle', 'Not connected');
+          else { setConn('error', 'Connection failed'); stickyStatus(msg, 'err'); }
+        }
+      }
+      async function disconnect() {
+        try { await Niimbot.disconnect(); } catch { /* already gone */ }
+        log('Disconnected'); resetFacts(); statusSticky = false;
+        setRoll('Connect the printer and the roll is detected automatically.');
+        setConn('idle', 'Not connected');
+      }
+      $('connect').addEventListener('click', () => (connState === 'connected' ? disconnect() : connect()));
+
+      $('refresh-status').addEventListener('click', async () => {
+        if (connState !== 'connected') return;
+        $('refresh-status').disabled = true;
+        try { await readStatus(); toast('Printer status updated'); }
+        catch (e) { if (isLinkLost(e)) return onLinkLost(e); log(`Status read failed: ${e.message || e}`, 'err'); toast("Couldn't read printer status", 'err'); }
+        finally { if (connState === 'connected') $('refresh-status').disabled = false; }
+      });
+      $('detect').addEventListener('click', async () => {
+        if (connState !== 'connected') return;
+        $('detect').disabled = true; setRoll('Reading the label roll tag…');
+        try {
+          await readStatus();
+          describeRoll();
+        } catch (err) {
+          if (isLinkLost(err)) return onLinkLost(err);
+          setRoll(`Couldn't read the roll tag: ${err.message || err}`);
+        } finally { if (connState === 'connected') $('detect').disabled = false; }
+      });
+
+      // ── Printing ────────────────────────────────────────────
+      const copiesInput = $('copies');
+      const clampCopies = n => clamp(Number.isFinite(n) ? Math.round(n) : 1, 1, 10);
+      copiesInput.value = clampCopies(Number(load(COPIES_KEY, 1)));
+      const setCopies = n => { copiesInput.value = clampCopies(n); save(COPIES_KEY, Number(copiesInput.value)); };
+      $('copies-minus').addEventListener('click', () => setCopies(Number(copiesInput.value) - 1));
+      $('copies-plus').addEventListener('click', () => setCopies(Number(copiesInput.value) + 1));
+      copiesInput.addEventListener('change', () => setCopies(Number(copiesInput.value)));
+
+      async function print() {
+        if (connState !== 'connected') return;
+        const copies = Number(copiesInput.value);
+        if (!Number.isInteger(copies) || copies < 1 || copies > 10) { setStatus('Choose between 1 and 10 copies.', 'err'); return; }
+        const printed = JSON.parse(JSON.stringify(doc));
+        const canvas = renderForPrint(printed), blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        const url = URL.createObjectURL(blob);
+        const size = { w_px:H, h_px:canvas.height };
+        statusSticky = false; setConn('printing', 'Printing…');
+        $('print-text').textContent = 'Printing…';
+        setStatus('Sending label… Keep the printer powered on.');
+        log(`Printing ${copies} × ${sizeInfo(printed).name}`);
+        try {
+          await Niimbot.printImage(url, { model, size, copies, onProgress:s => setStatus(`Printing: ${s}`) });
+          if (rollBarcode) rememberRollSize(rollBarcode, rollValue(printed));
+          addSaved(printed);
+          const done = `Printed ${copies} ${copies === 1 ? 'label' : 'labels'}. Check the first one for alignment.`;
+          setConn('connected', 'D110_M connected'); stickyStatus(done); log(done); toast('Print complete');
+          try { await readStatus(); } catch (e) { if (isLinkLost(e)) onLinkLost(e); }
+        } catch (err) {
+          const msg = `Print not confirmed: ${err.message || err} Check the printer and paper; a label may still have printed.`;
+          log(msg, 'err'); toast('Print not confirmed', 'err');
+          if (isLinkLost(err)) onLinkLost(err); else setConn('connected', 'D110_M connected');
+          stickyStatus(msg, 'err');
+        } finally {
+          URL.revokeObjectURL(url);
+          $('print-text').textContent = 'Print label';
+        }
+      }
+      $('print').addEventListener('click', print);
+
+      // ── Keyboard ────────────────────────────────────────────
+      const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+      const mod = isMac ? '⌘' : 'Ctrl+';
+      $('print-kbd').textContent = `${mod}P`;
+      $('undo').title = `Undo (${mod}Z)`; $('redo').title = `Redo (${isMac ? '⇧⌘Z' : 'Ctrl+Shift+Z'})`;
+      $('act-duplicate').title = `Duplicate (${mod}D)`;
+      const SHORTCUTS = [[`${mod}P`, 'Print'], [`${mod}Z`, 'Undo'], [isMac ? '⇧⌘Z' : 'Ctrl+Shift+Z', 'Redo'], [`${mod}D`, 'Duplicate selection'], ['⌫ / Delete', 'Delete selection'], ['Arrow keys', 'Nudge 1 dot (hold Shift for 10)'], ['Alt while dragging', 'Move without snapping'], ['Double-click text', 'Edit its text'], ['Esc', 'Deselect']];
+      for (const [k2, v] of SHORTCUTS) { const a = document.createElement('kbd'); a.textContent = k2; const b = document.createElement('span'); b.textContent = v; $('keys').append(a, b); }
+
+      document.addEventListener('keydown', e => {
+        const typing = e.target.closest?.('input[type=text], input[type=number], textarea, [contenteditable]') != null;
+        const cmd = e.metaKey || e.ctrlKey, key = e.key.toLowerCase();
+        if (cmd && key === 'p') {
+          e.preventDefault();
+          if (!$('print').disabled) print();
+          else if (connState === 'printing') toast('Already printing…');
+          else if (connState !== 'connected') toast('Connect the printer first');
+          else toast('Add something to the label first');
+          return;
+        }
+        if (typing) return;
+        if (cmd && key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+        if (cmd && key === 'y') { e.preventDefault(); redo(); return; }
+        if (cmd && key === 'd') { e.preventDefault(); duplicateSelected(); return; }
+        if (e.key === 'Escape') { select(null); return; }
+        const el = getEl(selectedId); if (!el) return;
+        if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSelected(); return; }
+        const step = e.shiftKey ? 10 : 1;
+        const moves = { ArrowLeft:[-step,0], ArrowRight:[step,0], ArrowUp:[0,-step], ArrowDown:[0,step] };
+        if (moves[e.key]) { e.preventDefault(); const c = clampCenter(el, el.cx + moves[e.key][0], el.cy + moves[e.key][1], W()); el.cx = c.cx; el.cy = c.cy; scheduleDraw(); clearTimeout(nudgeTimer); nudgeTimer = setTimeout(commit, 400); }
+      });
+      let nudgeTimer;
+
+      // ── Help & links ────────────────────────────────────────
+      for (const a of [$('repo-link'), $('help-repo')]) {
+        if (CONFIG.repoUrl) { a.href = CONFIG.repoUrl; a.target = '_blank'; a.rel = 'noopener'; }
+        else a.addEventListener('click', e => { e.preventDefault(); toast('Repository link coming soon'); });
+      }
+      $('help').addEventListener('click', () => $('help-dialog').showModal());
+      $('help-close').addEventListener('click', () => $('help-dialog').close());
+
+      // ── Start-up ────────────────────────────────────────────
+      if (!hasDriver || !hasBluetooth) {
+        $('banner').textContent = !hasDriver
+          ? "The printer driver didn't load (it comes from unpkg.com), so printing is off. Check your internet connection and reload. You can still design labels."
+          : 'Bluetooth printing needs Chrome or Edge on a desktop computer. You can still design and save labels here.';
+        $('banner').hidden = false; document.body.classList.add('has-banner');
+      }
+      new ResizeObserver(() => { layoutPaper(); renderOverlay(); }).observe($('stage'));
+      document.fonts?.ready.then(() => { draw(); renderCards(); });
+      rescueOffscreen();
+      syncLabelControls();
+      setConn('idle', 'Not connected');
+      updateHistoryButtons();
+      draw();
+      renderCards();
+      if (!load(DESIGN_KEY, null) && doc.elements[0]) select(doc.elements[0].id);
+    })();
+  </script>
+</body>
+</html>

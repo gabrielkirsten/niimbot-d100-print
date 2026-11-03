@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+
+# Cloudflare Tunnel credentials never go into git
+.secrets/
+
+# Blog drafts are not part of the app
+drafts/

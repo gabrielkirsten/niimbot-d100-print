@@ -1,0 +1,37 @@
+# Niimbot Print on Docker. The app is a single static page served by nginx.
+#
+#   docker compose up -d --build                  # app on http://localhost:8765
+#   docker compose --profile tunnel up -d         # also publish it through a Cloudflare Tunnel
+#
+# Tunnel credentials live in ./.secrets/cloudflared (git-ignored); see deploy/README.md.
+services:
+  web:
+    build: .
+    image: niimbot-print:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8765:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Off by default so a plain `up` never attaches a second connector to your tunnel by accident.
+  tunnel:
+    profiles: ["tunnel"]
+    image: cloudflare/cloudflared:2026.10.7
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --config /etc/cloudflared/niimbot-print.yml run
+    volumes:
+      - ./.secrets/cloudflared:/etc/cloudflared:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
